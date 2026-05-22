@@ -8,13 +8,15 @@ from django.contrib.auth import authenticate
 class UserSerializer(serializers.ModelSerializer):
     """Serialize user registration, creating User, Profile, and Token."""
 
+    username = serializers.CharField(required=True, allow_blank=False)
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True)
     repeated_password = serializers.CharField(write_only=True)
+    type = serializers.CharField(required=True, allow_blank=False)
 
     class Meta:
         model = Profile
-        fields = ["id", "fullname", "email", "password", "repeated_password"]
+        fields = ["id", "username", "email", "password", "repeated_password", "type"]
 
     def validate(self, data):
         """Ensure passwords match and email is not already in use."""
@@ -27,40 +29,14 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create a User, Profile, and Token, then return the User."""
         validated_data.pop("repeated_password")
-        fullname = validated_data.pop("fullname")
 
         user = User.objects.create_user(
-            username=validated_data["email"],
+            username=validated_data["username"],
             email=validated_data["email"],
             password=validated_data["password"],
         )
 
-        Profile.objects.create(user=user, fullname=fullname)
+        Profile.objects.create(user=user)
         Token.objects.create(user=user)
 
         return user
-
-
-class CustomLoginSerializer(serializers.Serializer):
-    """Authenticate a user by email and password, returning the User object."""
-
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
-
-    def validate(self, data):
-        """Look up user by email, authenticate password, and attach user to data."""
-        email = data.get("email")
-        password = data.get("password")
-
-        try:
-            username = User.objects.get(email=email).username
-        except User.DoesNotExist:
-            raise serializers.ValidationError("Invalid credentials")
-
-        user = authenticate(username=username, password=password)
-
-        if not user:
-            raise serializers.ValidationError("Invalid credentials")
-
-        data["user"] = user
-        return data
