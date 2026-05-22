@@ -1,0 +1,8 @@
+#sensitve files
+.env
+
+#django
+
+
+#database
+db.sqlite3
