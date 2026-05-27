@@ -1,5 +1,5 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
-from .models import CoderrProfile
+from auth_app.models import Profile
 
 class IsOwnerOrReadOnly(BasePermission):
     """
@@ -14,3 +14,16 @@ class IsOwnerOrReadOnly(BasePermission):
 
         # Write permissions are only allowed to the owner of the profile.
         return obj == request.user.profile
+    
+
+class IsBusinessOwner(BasePermission):
+    """
+    Custom permission to only allow users with a business profile to create offers.
+    """
+
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            try:
+                return request.user.profile.type == 'business'
+            except Profile.DoesNotExist:
+                return False

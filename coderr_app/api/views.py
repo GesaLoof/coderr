@@ -1,10 +1,11 @@
 from rest_framework import permissions, viewsets
-from .serializers import ProfileDetailSerializer, ProfileUpdateSerializer
+from .serializers import ProfileDetailSerializer, ProfileUpdateSerializer, ProfileListSerializerBusiness, ProfileListSerializerCustomer,\
+    OfferSerializer, OfferDetailSerializer
 from coderr_app.models import CoderrProfile
 from auth_app.models import Profile
 from rest_framework import generics, permissions
 from rest_framework.exceptions import NotFound
-from coderr_app.permissions import IsOwnerOrReadOnly
+from coderr_app.permissions import IsOwnerOrReadOnly, IsBusinessOwner
 from rest_framework.response import Response
 
 class ProfileDetailView(generics.RetrieveUpdateAPIView):
@@ -15,7 +16,7 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
     def get_permissions(self):
         if self.request.method == 'PATCH':
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
-        return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.request.method == 'PATCH':
@@ -42,15 +43,34 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
 class BusinessProfileListView(generics.ListAPIView):
     """List all profiles with type 'business'."""
     
-    serializer_class = ProfileDetailSerializer
-    permission_classes = [permissions.AllowAny]
+    serializer_class = ProfileListSerializerBusiness
+    permission_classes = [permissions.IsAuthenticated]
     queryset = Profile.objects.filter(type='business')
 
 
 class CustomerProfileListView(generics.ListAPIView):
     """List all profiles with type 'customer'."""
     
-    serializer_class = ProfileDetailSerializer
-    permission_classes = [permissions.AllowAny]
+    serializer_class = ProfileListSerializerCustomer
+    permission_classes = [permissions.IsAuthenticated]
     queryset = Profile.objects.filter(type='customer')
 
+
+
+class OfferViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing offers."""
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [permissions.IsAuthenticated(), IsBusinessOwner()]
+        if self.request.method == 'PATCH' or self.request.method == 'DELETE':
+            return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
+        return [permissions.IsAuthenticated()]
+    
+    def get_serializer_class(self):
+        if self.request.method == 'PUT':
+            return OfferDetailSerializer
+        return OfferSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(profile=self.request.user.profile) 

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from coderr_app.models import CoderrProfile
+from coderr_app.models import CoderrProfile, Offer, OfferDetail
 from auth_app.models import Profile
 from django.contrib.auth.models import User
 from rest_framework import generics
@@ -8,6 +8,7 @@ class CoderrProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoderrProfile
         fields = ['first_name', 'last_name', 'file', 'location', 'tel', 'description', 'working_hours']
+
 
 class ProfileDetailSerializer(serializers.ModelSerializer):
     # fields from User
@@ -23,6 +24,8 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     tel = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     working_hours = serializers.SerializerMethodField()
+    uploaded_at = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Profile
@@ -60,8 +63,26 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     def get_working_hours(self, obj):
         return self._get_coderr_field(obj, 'working_hours')
     
+    def get_uploaded_at(self, obj):
+        return self._get_coderr_field(obj, 'uploaded_at', default=None)
 
 
+class ProfileListSerializerBusiness(ProfileDetailSerializer):
+    """Serializer for listing business profiles — excludes email and created_at."""
+
+    class Meta(ProfileDetailSerializer.Meta):
+        fields = [
+            'user', 'username', 'first_name', 'last_name', 'file',
+            'location', 'tel', 'description', 'working_hours', 'type',
+        ]
+
+class ProfileListSerializerCustomer(ProfileDetailSerializer):
+    """Serializer for listing customer profiles — excludes email and created_at."""
+
+    class Meta(ProfileDetailSerializer.Meta):
+        fields = [
+            'user', 'username', 'first_name', 'last_name', 'file', 'uploaded_at', 'type',
+        ]
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
@@ -101,4 +122,41 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             setattr(coderr_profile, attr, value)
         coderr_profile.save()
 
+        return instance
+
+
+class OfferDetailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = OfferDetail
+        fields = ['id', 'title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
+
+
+class OfferSerializer(serializers.ModelSerializer):
+    details = OfferDetailSerializer(many=True)
+
+    class Meta:
+        model = Offer
+        fields = ['id', 'title', 'image', 'description', 'details']
+
+    def create(self, validated_data):
+        details_data = validated_data.pop('details')
+        offer = Offer.objects.create(**validated_data)  # profile is now in validated_data
+        for detail in details_data:
+            OfferDetail.objects.create(offer=offer, **detail)
+        return offer
+        
+    def update(self, instance, validated_data):
+        details_data = validated_data.pop('details', [])
+        
+        # update Offer fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # delete old details and recreate them
+        instance.details.all().delete()
+        for detail in details_data:
+            OfferDetail.objects.create(offer=instance, **detail)
+        
         return instance
