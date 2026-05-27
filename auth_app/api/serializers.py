@@ -29,6 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create a User, Profile, and Token, then return the User."""
         validated_data.pop("repeated_password")
+        type = validated_data.pop("type")
 
         user = User.objects.create_user(
             username=validated_data["username"],
@@ -36,7 +37,8 @@ class UserSerializer(serializers.ModelSerializer):
             password=validated_data["password"],
         )
 
-        Profile.objects.create(user=user)
+        Profile.objects.create(user=user, type=type)
         Token.objects.create(user=user)
 
         return user
+
