@@ -132,7 +132,22 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
 
 
-class OfferSerializer(serializers.ModelSerializer):
+class StrictModelSerializer(serializers.ModelSerializer):
+    def to_internal_value(self, data):
+        unknown_fields = set(data.keys()) - set(self.fields.keys())
+
+        if unknown_fields:
+            raise serializers.ValidationError(
+                {
+                    field: ["Unknown field."]
+                    for field in unknown_fields
+                }
+            )
+
+        return super().to_internal_value(data)
+
+
+class OfferCreateSerializer(StrictModelSerializer):
     details = OfferDetailSerializer(many=True)
 
     class Meta:
@@ -141,7 +156,7 @@ class OfferSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         details_data = validated_data.pop('details')
-        offer = Offer.objects.create(**validated_data)  # profile is now in validated_data
+        offer = Offer.objects.create(**validated_data)
         for detail in details_data:
             OfferDetail.objects.create(offer=offer, **detail)
         return offer
@@ -160,3 +175,78 @@ class OfferSerializer(serializers.ModelSerializer):
             OfferDetail.objects.create(offer=instance, **detail)
         
         return instance
+    
+
+class OfferDetailMinimalSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OfferDetail
+        fields = ['id', 'url']
+
+    def get_url(self, obj):
+        return f"/offerdetails/{obj.id}/"
+
+
+class OfferSerializer(serializers.ModelSerializer):
+    details = OfferDetailMinimalSerializer(many=True, read_only=True)
+    user = serializers.IntegerField(source='profile.user.id', read_only=True)
+    min_price = serializers.SerializerMethodField()
+    min_delivery_time = serializers.SerializerMethodField()
+    user_details = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Offer
+        fields = [
+            'id', 'user', 'title', 'image', 'description',
+            'created_at', 'updated_at', 'details',
+            'min_price', 'min_delivery_time', 'user_details'
+        ]
+
+    def get_min_price(self, obj):
+        prices = obj.details.values_list('price', flat=True)
+        return min(prices) if prices else None
+
+    def get_min_delivery_time(self, obj):
+        times = obj.details.values_list('delivery_time_in_days', flat=True)
+        return min(times) if times else None
+
+    def get_user_details(self, obj):
+        user = obj.profile.user
+        return {
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'username': user.username,
+        }
+    
+class OfferByIdSerializer(serializers.ModelSerializer):
+    details = OfferDetailMinimalSerializer(many=True, read_only=True)
+    user = serializers.IntegerField(source='profile.user.id', read_only=True)
+    min_price = serializers.SerializerMethodField()
+    min_delivery_time = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Offer
+        fields = [
+            'id', 'user', 'title', 'image', 'description',
+            'created_at', 'updated_at', 'details',
+            'min_price', 'min_delivery_time'
+        ]
+
+    def get_min_price(self, obj):
+        prices = obj.details.values_list('price', flat=True)
+        return min(prices) if prices else None
+
+    def get_min_delivery_time(self, obj):
+        times = obj.details.values_list('delivery_time_in_days', flat=True)
+        return min(times) if times else None
+    
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    customer_user = serializers.IntegerField(source='customer.id', read_only=True)
+    business_user = serializers.IntegerField(source='offer.profile.user.id', read_only=True)
+    offer = serializers.IntegerField(source='offer.id', read_only=True)
+    class Meta:
+        model = Offer
+        fields = ['id', 'customer_user', 'business_user', 'offer', 'status', 'created_at', 'updated_at']

@@ -3,7 +3,7 @@ from auth_app.models import Profile
 
 class IsOwnerOrReadOnly(BasePermission):
     """
-    Custom permission to only allow owners of a profile to edit it.
+    Custom permission to only allow owners of a profile or an offer to edit it.
     """
 
     def has_object_permission(self, request, view, obj):
@@ -12,7 +12,9 @@ class IsOwnerOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return True
 
-        # Write permissions are only allowed to the owner of the profile.
+        # Write permissions are only allowed to the owner of the profile/offer.
+        if hasattr(obj, 'profile'):
+            return obj.profile == request.user.profile
         return obj == request.user.profile
     
 

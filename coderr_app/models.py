@@ -35,6 +35,8 @@ class Offer(models.Model):
     title = models.CharField(max_length=200)
     image = models.FileField(upload_to='offer_images/', null=True, blank=True)
     description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True) 
 
     def __str__(self):
         return f"{self.title} by {self.profile.user.username}"
@@ -53,3 +55,14 @@ class OfferDetail(models.Model):
     def __str__(self):
         return self.name
     
+
+class Order(models.Model):
+    """Orders placed by customers for offers."""
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='orders')
+    customer = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='orders')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=100, default="pending")
+
+    def __str__(self):
+        return f"Order of {self.offer.title} by {self.customer.user.username}"
