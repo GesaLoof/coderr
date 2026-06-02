@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from coderr_app.models import CoderrProfile, Offer, OfferDetail
+from coderr_app.models import CoderrProfile, Offer, OfferDetail, Order, Review
 from auth_app.models import Profile
 from django.contrib.auth.models import User
 from rest_framework import generics
@@ -244,9 +244,108 @@ class OfferByIdSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    customer_user = serializers.IntegerField(source='customer.id', read_only=True)
-    business_user = serializers.IntegerField(source='offer.profile.user.id', read_only=True)
-    offer = serializers.IntegerField(source='offer.id', read_only=True)
     class Meta:
-        model = Offer
-        fields = ['id', 'customer_user', 'business_user', 'offer', 'status', 'created_at', 'updated_at']
+        model = Order
+        fields = [
+            'id',
+            'customer_user',
+            'business_user',
+            'title',
+            'revisions',
+            'delivery_time_in_days',
+            'price',
+            'features',
+            'offer_type',
+            'status',
+            'created_at',
+            'updated_at',
+        ]
+
+
+class OrderCreateSerializer(serializers.ModelSerializer):
+    offer_detail_id = serializers.PrimaryKeyRelatedField(
+        queryset=OfferDetail.objects.select_related('offer__profile'),
+        source='offer_detail',
+        write_only=True
+    )
+
+    class Meta:
+        model = Order
+        fields = [
+            'id',
+            'offer_detail_id',
+            'customer_user',
+            'business_user',
+            'title',
+            'revisions',
+            'delivery_time_in_days',
+            'price',
+            'features',
+            'offer_type',
+            'status',
+            'created_at',
+            'updated_at',
+        ]
+
+        read_only_fields = [
+            'id',
+            'customer_user',
+            'business_user',
+            'title',
+            'revisions',
+            'delivery_time_in_days',
+            'price',
+            'features',
+            'offer_type',
+            'status',
+            'created_at',
+            'updated_at',
+        ]
+
+    def create(self, validated_data):
+        offer_detail = validated_data.pop('offer_detail')
+        customer = self.context['request'].user.profile
+
+        return Order.objects.create(
+            offer=offer_detail.offer,
+            offer_detail=offer_detail,
+
+            customer_user=customer,
+            business_user=offer_detail.offer.profile,
+
+            title=offer_detail.title,
+            revisions=offer_detail.revisions,
+            delivery_time_in_days=offer_detail.delivery_time_in_days,
+            price=offer_detail.price,
+            features=offer_detail.features,
+            offer_type=offer_detail.offer_type,
+
+            status='in_progress',
+        )
+    
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['id', 'order', 'business_user', 'rating', 'comment', 'created_at']    
+
+
+class ReviewCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['id', 'order', 'business_user', 'rating', 'comment', 'created_at']
+        read_only_fields = ['id', 'business_user', 'created_at']
+
+    def create(self, validated_data):
+        order = validated_data['order']
+        reviewer = self.context['request'].user.profile
+
+        if order.customer_user != reviewer:
+            raise serializers.ValidationError("You can only review orders you have made.")
+
+        return Review.objects.create(
+            order=order,
+            business_user=order.business_user,
+            rating=validated_data['rating'],
+            comment=validated_data['comment']
+        )

@@ -1,5 +1,6 @@
 from django.urls import path, include
-from .views import ProfileDetailView, BusinessProfileListView, CustomerProfileListView, OfferViewSet, OfferDetailView, OrderViewSet
+from .views import ProfileDetailView, BusinessProfileListView, CustomerProfileListView, OfferViewSet, \
+    OfferDetailView, OrderViewSet, OrderCountView, CompletedOrderCountView
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -11,5 +12,7 @@ urlpatterns = [
     path('profile/<int:pk>/', ProfileDetailView.as_view(), name='profile-detail'),
     path('profiles/business/', BusinessProfileListView.as_view(), name='profile-business'),
     path('profiles/customer/', CustomerProfileListView.as_view(), name='profile-customers'),
+    path('order-count/<int:pk>/', OrderCountView.as_view(), name='order-count'),
+    path('completed-order-count/<int:pk>/', CompletedOrderCountView.as_view(), name='completed-order-count'),
 
 ]

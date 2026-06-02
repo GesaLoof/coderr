@@ -24,8 +24,26 @@ class IsBusinessOwner(BasePermission):
     """
 
     def has_permission(self, request, view):
-        if request.method == 'POST':
+        if request.method == 'POST' or 'PATCH' or 'DELETE':
             try:
                 return request.user.profile.type == 'business'
             except Profile.DoesNotExist:
                 return False
+
+
+class IsCustomer(BasePermission):
+    """
+    Custom permission to only allow users with a customer profile to make orders.
+    """
+
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            try:
+                return request.user.profile.type == 'customer'
+            except Profile.DoesNotExist:
+                return False
+            
+
+class IsStaffUser(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.is_staff

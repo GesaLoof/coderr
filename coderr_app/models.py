@@ -47,22 +47,63 @@ class OfferDetail(models.Model):
     offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='details')  # ← add this
     title = models.CharField(max_length=100)
     revisions = models.IntegerField(default=0)
-    delivery_time_in_days = models.CharField(max_length=100)
+    delivery_time_in_days = models.IntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     features = models.JSONField(default=list)
     offer_type = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.name
+        return self.title
     
 
 class Order(models.Model):
-    """Orders placed by customers for offers."""
-    offer = models.ForeignKey(Offer, on_delete=models.CASCADE, related_name='orders')
-    customer = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='orders')
+    offer = models.ForeignKey(Offer, on_delete=models.CASCADE)
+    offer_detail = models.ForeignKey(OfferDetail, on_delete=models.PROTECT)
+
+    customer_user = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name='orders'
+    )
+
+    business_user = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name='received_orders'
+    )
+
+    title = models.CharField(max_length=100)
+    revisions = models.IntegerField()
+    delivery_time_in_days = models.IntegerField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    features = models.JSONField(default=list)
+    offer_type = models.CharField(max_length=100)
+
+    status = models.CharField(max_length=100, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=100, default="pending")
 
     def __str__(self):
         return f"Order of {self.offer.title} by {self.customer.user.username}"
+    
+
+
+class Review(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='review')
+    business_user = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name='received_reviews'
+    )
+    reviewer_user = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name='reviews'
+    )
+    description = models.TextField()
+    rating = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Review for {self.order.offer.title} by {self.order.customer_user.user.username}"

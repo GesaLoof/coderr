@@ -1,11 +1,11 @@
 from rest_framework import permissions, viewsets
 from .serializers import ProfileDetailSerializer, ProfileUpdateSerializer, ProfileListSerializerBusiness, ProfileListSerializerCustomer,\
-    OfferSerializer, OfferDetailSerializer, OfferCreateSerializer, OfferByIdSerializer, OrderSerializer
+    OfferSerializer, OfferDetailSerializer, OfferCreateSerializer, OfferByIdSerializer, OrderSerializer, OrderCreateSerializer
 from coderr_app.models import CoderrProfile, Offer, OfferDetail, Order
 from auth_app.models import Profile
 from rest_framework import generics, permissions
 from rest_framework.exceptions import NotFound
-from coderr_app.permissions import IsOwnerOrReadOnly, IsBusinessOwner
+from coderr_app.permissions import IsOwnerOrReadOnly, IsBusinessOwner, IsCustomer, IsStaffUser
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
@@ -13,7 +13,7 @@ from django.db.models import Q
 class ProfileDetailView(generics.RetrieveUpdateAPIView):
     """Get or patch a single profile by pk."""
     
-    http_method_names = ['get', 'patch', 'head', 'options']  # block put
+    http_method_names = ['get', 'patch', 'head', 'options']
     
     def get_permissions(self):
         if self.request.method == 'PATCH':
@@ -65,7 +65,7 @@ class LargeResultsPagination(PageNumberPagination):
 class OfferViewSet(viewsets.ModelViewSet):
     """ViewSet for managing offers."""
 
-    PAGINATION_CLASS = LargeResultsPagination
+    pagination_class = LargeResultsPagination
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -127,5 +127,59 @@ class OfferDetailView(generics.RetrieveAPIView):
 class OrderViewSet(viewsets.ModelViewSet):
     """ViewSet for managing orders."""
     queryset = Order.objects.all()
-    serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return OrderCreateSerializer
+        return OrderSerializer
+    
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [permissions.IsAuthenticated(), IsCustomer()]
+        if self.request.method == 'PATCH':
+            return [permissions.IsAuthenticated(), IsBusinessOwner()]
+        if self.request.method == 'DELETE':
+            return [IsStaffUser()]
+        return [permissions.IsAuthenticated()]
+    
+
+class OrderCountView(generics.RetrieveAPIView):
+    """Get the count of orders for a specific business profile."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        profile_id = self.kwargs['pk']
+        try:
+            profile = Profile.objects.get(pk=profile_id)
+        except Profile.DoesNotExist:
+            raise NotFound("No profile matches the given query.")
+        
+        if profile.type != 'business':
+            raise NotFound("Profile is not a business profile.")
+        
+        order_count = Order.objects.filter(business_user=profile).count()
+        return Response({'order_count': order_count})
+    
+
+class CompletedOrderCountView(generics.RetrieveAPIView):
+    """Get the count of orders for a specific business profile."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        profile_id = self.kwargs['pk']
+        try:
+            profile = Profile.objects.get(pk=profile_id)
+        except Profile.DoesNotExist:
+            raise NotFound("No profile matches the given query.")
+        
+        if profile.type != 'business':
+            raise NotFound("Profile is not a business profile.")
+        
+        order_count = Order.objects.filter(business_user=profile).count()
+        try:
+            order_count = Order.objects.filter(business_user=profile, status='completed').count()
+        except Order.DoesNotExist:
+            order_count = 0
+        return Response({'order_count': order_count})
