@@ -14,9 +14,9 @@ from .serializers import (
     ReviewCreateSerializer,
     ReviewUpdateSerializer,
 )
-from coderr_app.models import CoderrProfile, Offer, OfferDetail, Order, Review
+from coderr_app.models import Offer, OfferDetail, Order, Review
 from auth_app.models import Profile
-from rest_framework import generics, permissions
+from rest_framework import generics
 from rest_framework.exceptions import NotFound
 from coderr_app.permissions import (
     IsOwnerOrReadOnly,

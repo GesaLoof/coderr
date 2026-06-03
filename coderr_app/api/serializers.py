@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from coderr_app.models import CoderrProfile, Offer, OfferDetail, Order, Review
 from auth_app.models import Profile
-from django.contrib.auth.models import User
-from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied
 
 
