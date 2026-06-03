@@ -9,15 +9,25 @@ from rest_framework.exceptions import PermissionDenied
 class CoderrProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoderrProfile
-        fields = ['first_name', 'last_name', 'file', 'location', 'tel', 'description', 'working_hours']
+        fields = [
+            "first_name",
+            "last_name",
+            "file",
+            "location",
+            "tel",
+            "description",
+            "working_hours",
+        ]
 
 
 class ProfileDetailSerializer(serializers.ModelSerializer):
+    """Serialize a Profile with related User and CoderrProfile data."""
+
     # fields from User
-    user = serializers.IntegerField(source='user.id', read_only=True)
-    username = serializers.CharField(source='user.username', read_only=True)
-    email = serializers.CharField(source='user.email', read_only=True)
-    
+    user = serializers.IntegerField(source="user.id", read_only=True)
+    username = serializers.CharField(source="user.username", read_only=True)
+    email = serializers.CharField(source="user.email", read_only=True)
+
     # fields from CoderrProfile (default to " " if no CoderrProfile exists yet)
     first_name = serializers.SerializerMethodField()
     last_name = serializers.SerializerMethodField()
@@ -28,13 +38,21 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     working_hours = serializers.SerializerMethodField()
     uploaded_at = serializers.SerializerMethodField()
 
-
     class Meta:
         model = Profile
         fields = [
-            'user', 'username', 'first_name', 'last_name', 'file',
-            'location', 'tel', 'description', 'working_hours',
-            'type', 'email', 'created_at'
+            "user",
+            "username",
+            "first_name",
+            "last_name",
+            "file",
+            "location",
+            "tel",
+            "description",
+            "working_hours",
+            "type",
+            "email",
+            "created_at",
         ]
 
     def _get_coderr_field(self, obj, field, default=" "):
@@ -45,28 +63,28 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
             return default
 
     def get_first_name(self, obj):
-        return self._get_coderr_field(obj, 'first_name')
+        return self._get_coderr_field(obj, "first_name")
 
     def get_last_name(self, obj):
-        return self._get_coderr_field(obj, 'last_name')
+        return self._get_coderr_field(obj, "last_name")
 
     def get_file(self, obj):
-        return self._get_coderr_field(obj, 'file', default=None)
+        return self._get_coderr_field(obj, "file", default=None)
 
     def get_location(self, obj):
-        return self._get_coderr_field(obj, 'location')
+        return self._get_coderr_field(obj, "location")
 
     def get_tel(self, obj):
-        return self._get_coderr_field(obj, 'tel')
+        return self._get_coderr_field(obj, "tel")
 
     def get_description(self, obj):
-        return self._get_coderr_field(obj, 'description')
+        return self._get_coderr_field(obj, "description")
 
     def get_working_hours(self, obj):
-        return self._get_coderr_field(obj, 'working_hours')
-    
+        return self._get_coderr_field(obj, "working_hours")
+
     def get_uploaded_at(self, obj):
-        return self._get_coderr_field(obj, 'uploaded_at', default=None)
+        return self._get_coderr_field(obj, "uploaded_at", default=None)
 
 
 class ProfileListSerializerBusiness(ProfileDetailSerializer):
@@ -74,24 +92,41 @@ class ProfileListSerializerBusiness(ProfileDetailSerializer):
 
     class Meta(ProfileDetailSerializer.Meta):
         fields = [
-            'user', 'username', 'first_name', 'last_name', 'file',
-            'location', 'tel', 'description', 'working_hours', 'type',
+            "user",
+            "username",
+            "first_name",
+            "last_name",
+            "file",
+            "location",
+            "tel",
+            "description",
+            "working_hours",
+            "type",
         ]
+
 
 class ProfileListSerializerCustomer(ProfileDetailSerializer):
     """Serializer for listing customer profiles — excludes email and created_at."""
 
     class Meta(ProfileDetailSerializer.Meta):
         fields = [
-            'user', 'username', 'first_name', 'last_name', 'file', 'uploaded_at', 'type',
+            "user",
+            "username",
+            "first_name",
+            "last_name",
+            "file",
+            "uploaded_at",
+            "type",
         ]
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """Partial-update User.email, Profile.type, and CoderrProfile fields in one call."""
+
     # fields from User
-    email = serializers.EmailField(source='user.email', required=False)
+    email = serializers.EmailField(source="user.email", required=False)
     # fields from Profile
-    type = serializers.CharField(source='profile.type', required=False)
+    type = serializers.CharField(source="profile.type", required=False)
     # fields from CoderrProfile directly
     first_name = serializers.CharField(required=False)
     last_name = serializers.CharField(required=False)
@@ -102,19 +137,27 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CoderrProfile
-        fields = ['first_name', 'last_name', 'location', 'tel', 
-                  'description', 'working_hours', 'email', 'type']
+        fields = [
+            "first_name",
+            "last_name",
+            "location",
+            "tel",
+            "description",
+            "working_hours",
+            "email",
+            "type",
+        ]
 
     def update(self, instance, validated_data):
-        user_data = validated_data.pop('user', {})
+        user_data = validated_data.pop("user", {})
         if user_data:
-            instance.user.email = user_data.get('email', instance.user.email)
+            instance.user.email = user_data.get("email", instance.user.email)
             instance.user.save()
 
         # update Profile fields directly on instance
-        profile_data = validated_data.pop('profile', {})
+        profile_data = validated_data.pop("profile", {})
         if profile_data:
-            instance.type = profile_data.get('type', instance.type)
+            instance.type = profile_data.get("type", instance.type)
             instance.save()
 
         # get or create the related CoderrProfile and update it
@@ -130,41 +173,52 @@ class OfferDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OfferDetail
-        fields = ['id', 'title', 'revisions', 'delivery_time_in_days', 'price', 'features', 'offer_type']
+        fields = [
+            "id",
+            "title",
+            "revisions",
+            "delivery_time_in_days",
+            "price",
+            "features",
+            "offer_type",
+        ]
 
 
 class StrictModelSerializer(serializers.ModelSerializer):
+    """Base serializer that rejects unknown fields on input."""
+
     def to_internal_value(self, data):
         unknown_fields = set(data.keys()) - set(self.fields.keys())
 
         if unknown_fields:
             raise serializers.ValidationError(
-                {
-                    field: ["Unknown field."]
-                    for field in unknown_fields
-                }
+                {field: ["Unknown field."] for field in unknown_fields}
             )
 
         return super().to_internal_value(data)
 
 
 class OfferCreateSerializer(StrictModelSerializer):
+    """Create or update an Offer with nested OfferDetail pricing tiers."""
+
     details = OfferDetailSerializer(many=True)
 
     class Meta:
         model = Offer
-        fields = ['id', 'title', 'image', 'description', 'details']
+        fields = ["id", "title", "image", "description", "details"]
 
     def create(self, validated_data):
-        details_data = validated_data.pop('details')
+        """Persist the offer and each nested detail row."""
+
+        details_data = validated_data.pop("details")
         offer = Offer.objects.create(**validated_data)
         for detail in details_data:
             OfferDetail.objects.create(offer=offer, **detail)
         return offer
-        
+
     def update(self, instance, validated_data):
-        details_data = validated_data.pop('details', [])
-        
+        details_data = validated_data.pop("details", [])
+
         # update Offer fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -174,24 +228,28 @@ class OfferCreateSerializer(StrictModelSerializer):
         instance.details.all().delete()
         for detail in details_data:
             OfferDetail.objects.create(offer=instance, **detail)
-        
+
         return instance
-    
+
 
 class OfferDetailMinimalSerializer(serializers.ModelSerializer):
+    """Minimal OfferDetail readout for list views — id and URL only."""
+
     url = serializers.SerializerMethodField()
 
     class Meta:
         model = OfferDetail
-        fields = ['id', 'url']
+        fields = ["id", "url"]
 
     def get_url(self, obj):
         return f"/offerdetails/{obj.id}/"
 
 
 class OfferSerializer(serializers.ModelSerializer):
+    """Serialize offers for list views with computed min price, min delivery, and user info."""
+
     details = OfferDetailMinimalSerializer(many=True, read_only=True)
-    user = serializers.IntegerField(source='profile.user.id', read_only=True)
+    user = serializers.IntegerField(source="profile.user.id", read_only=True)
     min_price = serializers.SerializerMethodField()
     min_delivery_time = serializers.SerializerMethodField()
     user_details = serializers.SerializerMethodField()
@@ -199,150 +257,190 @@ class OfferSerializer(serializers.ModelSerializer):
     class Meta:
         model = Offer
         fields = [
-            'id', 'user', 'title', 'image', 'description',
-            'created_at', 'updated_at', 'details',
-            'min_price', 'min_delivery_time', 'user_details'
+            "id",
+            "user",
+            "title",
+            "image",
+            "description",
+            "created_at",
+            "updated_at",
+            "details",
+            "min_price",
+            "min_delivery_time",
+            "user_details",
         ]
 
     def get_min_price(self, obj):
-        prices = obj.details.values_list('price', flat=True)
+        prices = obj.details.values_list("price", flat=True)
         return min(prices) if prices else None
 
     def get_min_delivery_time(self, obj):
-        times = obj.details.values_list('delivery_time_in_days', flat=True)
+        times = obj.details.values_list("delivery_time_in_days", flat=True)
         return min(times) if times else None
 
     def get_user_details(self, obj):
         user = obj.profile.user
         return {
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'username': user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
         }
-    
+
+
 class OfferByIdSerializer(serializers.ModelSerializer):
+    """Serialize a single offer with details for the offer detail page."""
+
     details = OfferDetailMinimalSerializer(many=True, read_only=True)
-    user = serializers.IntegerField(source='profile.user.id', read_only=True)
+    user = serializers.IntegerField(source="profile.user.id", read_only=True)
     min_price = serializers.SerializerMethodField()
     min_delivery_time = serializers.SerializerMethodField()
 
     class Meta:
         model = Offer
         fields = [
-            'id', 'user', 'title', 'image', 'description',
-            'created_at', 'updated_at', 'details',
-            'min_price', 'min_delivery_time'
+            "id",
+            "user",
+            "title",
+            "image",
+            "description",
+            "created_at",
+            "updated_at",
+            "details",
+            "min_price",
+            "min_delivery_time",
         ]
 
     def get_min_price(self, obj):
-        prices = obj.details.values_list('price', flat=True)
+        prices = obj.details.values_list("price", flat=True)
         return min(prices) if prices else None
 
     def get_min_delivery_time(self, obj):
-        times = obj.details.values_list('delivery_time_in_days', flat=True)
+        times = obj.details.values_list("delivery_time_in_days", flat=True)
         return min(times) if times else None
-    
 
 
 class OrderSerializer(serializers.ModelSerializer):
+    """Serialize a full Order record."""
+
     class Meta:
         model = Order
         fields = [
-            'id',
-            'customer_user',
-            'business_user',
-            'title',
-            'revisions',
-            'delivery_time_in_days',
-            'price',
-            'features',
-            'offer_type',
-            'status',
-            'created_at',
-            'updated_at',
+            "id",
+            "customer_user",
+            "business_user",
+            "title",
+            "revisions",
+            "delivery_time_in_days",
+            "price",
+            "features",
+            "offer_type",
+            "status",
+            "created_at",
+            "updated_at",
         ]
 
 
 class OrderCreateSerializer(serializers.ModelSerializer):
+    """Accept an offer_detail_id and auto-populate all order fields from the offer."""
+
     offer_detail_id = serializers.PrimaryKeyRelatedField(
-        queryset=OfferDetail.objects.select_related('offer__profile'),
-        source='offer_detail',
-        write_only=True
+        queryset=OfferDetail.objects.select_related("offer__profile"),
+        source="offer_detail",
+        write_only=True,
     )
 
     class Meta:
         model = Order
         fields = [
-            'id',
-            'offer_detail_id',
-            'customer_user',
-            'business_user',
-            'title',
-            'revisions',
-            'delivery_time_in_days',
-            'price',
-            'features',
-            'offer_type',
-            'status',
-            'created_at',
-            'updated_at',
+            "id",
+            "offer_detail_id",
+            "customer_user",
+            "business_user",
+            "title",
+            "revisions",
+            "delivery_time_in_days",
+            "price",
+            "features",
+            "offer_type",
+            "status",
+            "created_at",
+            "updated_at",
         ]
 
         read_only_fields = [
-            'id',
-            'customer_user',
-            'business_user',
-            'title',
-            'revisions',
-            'delivery_time_in_days',
-            'price',
-            'features',
-            'offer_type',
-            'status',
-            'created_at',
-            'updated_at',
+            "id",
+            "customer_user",
+            "business_user",
+            "title",
+            "revisions",
+            "delivery_time_in_days",
+            "price",
+            "features",
+            "offer_type",
+            "status",
+            "created_at",
+            "updated_at",
         ]
 
     def create(self, validated_data):
-        offer_detail = validated_data.pop('offer_detail')
-        customer = self.context['request'].user.profile
+        """Snapshot offer detail data into a new Order with status 'in_progress'."""
+        offer_detail = validated_data.pop("offer_detail")
+        customer = self.context["request"].user.profile
 
         return Order.objects.create(
             offer=offer_detail.offer,
             offer_detail=offer_detail,
-
             customer_user=customer,
             business_user=offer_detail.offer.profile,
-
             title=offer_detail.title,
             revisions=offer_detail.revisions,
             delivery_time_in_days=offer_detail.delivery_time_in_days,
             price=offer_detail.price,
             features=offer_detail.features,
             offer_type=offer_detail.offer_type,
-
-            status='in_progress',
+            status="in_progress",
         )
-    
+
+
 class ReviewSerializer(serializers.ModelSerializer):
+    """Serialize a full Review record."""
+
     class Meta:
         model = Review
-        fields = ['id', 'business_user', 'reviewer', 'rating', 'description','created_at', 'updated_at']    
+        fields = [
+            "id",
+            "business_user",
+            "reviewer",
+            "rating",
+            "description",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class ReviewCreateSerializer(serializers.ModelSerializer):
+    """Create a review, gating on prior order with the target business."""
+
     reviewer = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Review
-        fields = ['id', 'business_user', 'reviewer', 'rating', 'description','created_at', 'updated_at']
+        fields = [
+            "id",
+            "business_user",
+            "reviewer",
+            "rating",
+            "description",
+            "created_at",
+            "updated_at",
+        ]
 
     def validate_business_user(self, business_user):
-        reviewer = self.context['request'].user.profile
+        """Ensure reviewer has ordered from this business and has not already reviewed it."""
+        reviewer = self.context["request"].user.profile
 
         has_ordered = Order.objects.filter(
-            customer_user=reviewer,
-            business_user=business_user
+            customer_user=reviewer, business_user=business_user
         ).exists()
 
         if not has_ordered:
@@ -351,40 +449,34 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
             )
 
         if Review.objects.filter(
-            reviewer=reviewer,
-            business_user=business_user
+            reviewer=reviewer, business_user=business_user
         ).exists():
-            raise PermissionDenied(
-                "You have already reviewed this business."
-            )
+            raise PermissionDenied("You have already reviewed this business.")
 
         return business_user
 
     def create(self, validated_data):
         return Review.objects.create(
-            reviewer=self.context['request'].user.profile,
-            **validated_data
+            reviewer=self.context["request"].user.profile, **validated_data
         )
-    
+
 
 class ReviewUpdateSerializer(serializers.ModelSerializer):
+    """Restrict review updates to only rating and description fields."""
 
     class Meta:
         model = Review
-        fields = ['rating', 'description']
+        fields = ["rating", "description"]
 
     def validate(self, attrs):
-        allowed_fields = {'rating', 'description'}
+        allowed_fields = {"rating", "description"}
 
         received_fields = set(self.initial_data.keys())
         unknown_fields = received_fields - allowed_fields
 
         if unknown_fields:
             raise serializers.ValidationError(
-                {
-                    field: "This field is not allowed."
-                    for field in unknown_fields
-                }
+                {field: "This field is not allowed." for field in unknown_fields}
             )
 
         return attrs

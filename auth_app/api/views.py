@@ -31,6 +31,8 @@ class RegisterView(APIView):
 
 
 class CustomLoginView(ObtainAuthToken):
+    """Authenticate user and return token with profile fields."""
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -38,7 +40,7 @@ class CustomLoginView(ObtainAuthToken):
 
         data = {}
         if serializer.is_valid():
-            user = serializer.validated_data['user']
+            user = serializer.validated_data["user"]
             token, _ = Token.objects.get_or_create(user=user)
             data = {
                 "token": token.key,
@@ -47,8 +49,6 @@ class CustomLoginView(ObtainAuthToken):
                 "user_id": user.id,
             }
             return Response(data, status=status.HTTP_200_OK)
-        else:
-            print("Registration error:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

@@ -23,7 +23,9 @@ class UserSerializer(serializers.ModelSerializer):
         if data["password"] != data["repeated_password"]:
             raise serializers.ValidationError({"password": "Passwords do not match."})
         if User.objects.filter(email=data["email"]).exists():
-            raise serializers.ValidationError({"email": "A user with this email already exists."})
+            raise serializers.ValidationError(
+                {"email": "A user with this email already exists."}
+            )
         return data
 
     def create(self, validated_data):
@@ -41,4 +43,3 @@ class UserSerializer(serializers.ModelSerializer):
         Token.objects.create(user=user)
 
         return user
-

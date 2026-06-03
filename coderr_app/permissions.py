@@ -1,6 +1,7 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 from auth_app.models import Profile
 
+
 class IsOwnerOrReadOnly(BasePermission):
     """
     Custom permission to only allow owners of a profile or an offer to edit it.
@@ -13,10 +14,10 @@ class IsOwnerOrReadOnly(BasePermission):
             return True
 
         # Write permissions are only allowed to the owner of the profile/offer.
-        if hasattr(obj, 'profile'):
+        if hasattr(obj, "profile"):
             return obj.profile == request.user.profile
         return obj == request.user.profile
-    
+
 
 class IsBusinessOwner(BasePermission):
     """
@@ -25,26 +26,30 @@ class IsBusinessOwner(BasePermission):
 
     def has_permission(self, request, view):
         try:
-            return request.user.profile.type == 'business'
+            return request.user.profile.type == "business"
         except Profile.DoesNotExist:
             return False
 
 
 class IsCustomer(BasePermission):
+    """Only allow users with a customer profile."""
 
     def has_permission(self, request, view):
         try:
-            print(request.user.profile.type)
-            return request.user.profile.type == 'customer'
+            return request.user.profile.type == "customer"
         except Profile.DoesNotExist:
             return False
-            
+
 
 class IsStaffUser(BasePermission):
+    """Only allow Django staff users."""
+
     def has_permission(self, request, view):
         return request.user.is_authenticated and request.user.is_staff
-    
+
 
 class IsReviewOwner(BasePermission):
+    """Only allow the author of a review to modify it."""
+
     def has_object_permission(self, request, view, obj):
         return obj.reviewer == request.user.profile

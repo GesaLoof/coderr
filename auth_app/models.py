@@ -8,8 +8,8 @@ class Profile(models.Model):
     """Extend the built-in User with user type."""
 
     TYPE_CHOICES = [
-        ('customer', 'Customer'),
-        ('business', 'Business'),
+        ("customer", "Customer"),
+        ("business", "Business"),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     type = models.CharField(max_length=50, choices=TYPE_CHOICES, default="customer")
