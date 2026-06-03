@@ -119,7 +119,7 @@ class OfferViewSet(viewsets.ModelViewSet):
         serializer.save(profile=self.request.user.profile)
 
     def get_queryset(self):
-        query_set = Offer.objects.all()
+        queryset = Offer.objects.all()
 
         offer_type = self.request.query_params.get("offer_type")
         creator_id = self.request.query_params.get("creator_id")
@@ -129,28 +129,28 @@ class OfferViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get("search")  # in title or description
 
         if offer_type:
-            query_set = query_set.filter(details__offer_type=offer_type)
+            queryset = queryset.filter(details__offer_type=offer_type)
         if creator_id:
-            query_set = query_set.filter(profile__id=creator_id)
+            queryset = queryset.filter(profile__id=creator_id)
         if min_price:
-            query_set = query_set.filter(details__price__gte=min_price)
+            queryset = queryset.filter(details__price__gte=min_price)
         if max_delivery_time:
-            query_set = query_set.filter(
+            queryset = queryset.filter(
                 details__delivery_time_in_days__lte=max_delivery_time
             )
         if search:
-            query_set = query_set.filter(
+            queryset = queryset.filter(
                 Q(title__icontains=search) | Q(description__icontains=search)
             )
         allowed_ordering = ["min_price", "-min_price", "updated_at", "-updated_at"]
         if ordering in allowed_ordering:
             if ordering == "min_price":
-                query_set = query_set.order_by("details__price")
+                queryset = queryset.order_by("details__price")
             elif ordering == "-min_price":
-                query_set = query_set.order_by("-details__price")
+                queryset = queryset.order_by("-details__price")
             else:
-                query_set = query_set.order_by(ordering)
-        return query_set.distinct()
+                queryset = queryset.order_by(ordering)
+        return queryset.distinct()
 
 
 class OfferDetailView(generics.RetrieveAPIView):
