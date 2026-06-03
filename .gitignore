@@ -1,8 +1,10 @@
-#sensitve files
+#sensitive files
 .env
 
 #django
-
+__pycache__/
+*.pyc
+*.pyo
 
 #database
 db.sqlite3
