@@ -184,7 +184,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 
 class OrderCountView(generics.RetrieveAPIView):
-    """Get the count of orders for a specific business profile."""
+    """Get the count of orders in progress for a specific business profile."""
 
     permission_classes = [permissions.IsAuthenticated]
 
@@ -198,12 +198,14 @@ class OrderCountView(generics.RetrieveAPIView):
         if profile.type != "business":
             raise NotFound("Profile is not a business profile.")
 
-        order_count = Order.objects.filter(business_user=profile).count()
+        order_count = Order.objects.filter(
+            business_user=profile, status="in_progress"
+        ).count()
         return Response({"order_count": order_count})
 
 
 class CompletedOrderCountView(generics.RetrieveAPIView):
-    """Get the count of orders for a specific business profile."""
+    """Get the count of completed orders for a specific business profile."""
 
     permission_classes = [permissions.IsAuthenticated]
 
@@ -217,13 +219,9 @@ class CompletedOrderCountView(generics.RetrieveAPIView):
         if profile.type != "business":
             raise NotFound("Profile is not a business profile.")
 
-        order_count = Order.objects.filter(business_user=profile).count()
-        try:
-            order_count = Order.objects.filter(
-                business_user=profile, status="completed"
-            ).count()
-        except Order.DoesNotExist:
-            order_count = 0
+        order_count = Order.objects.filter(
+            business_user=profile, status="completed"
+        ).count()
         return Response({"order_count": order_count})
 
 
