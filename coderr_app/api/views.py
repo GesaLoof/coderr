@@ -231,6 +231,24 @@ class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     pagination_class = None
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        business_user_id = self.request.query_params.get("business_user_id")
+        reviewer_id = self.request.query_params.get("reviewer_id")
+        ordering = self.request.query_params.get("ordering")
+
+        if business_user_id:
+            queryset = queryset.filter(business_user_id=business_user_id)
+        if reviewer_id:
+            queryset = queryset.filter(reviewer_id=reviewer_id)
+
+        allowed_ordering = ["-updated_at", "updated_at", "-rating", "rating"]
+        if ordering in allowed_ordering:
+            queryset = queryset.order_by(ordering)
+
+        return queryset
+
     def get_serializer_class(self):
         if self.action == "create":
             return ReviewCreateSerializer
