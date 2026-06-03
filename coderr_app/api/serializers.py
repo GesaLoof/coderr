@@ -3,6 +3,8 @@ from coderr_app.models import CoderrProfile, Offer, OfferDetail, Order, Review
 from auth_app.models import Profile
 from django.contrib.auth.models import User
 from rest_framework import generics
+from rest_framework.exceptions import PermissionDenied
+
 
 class CoderrProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -104,7 +106,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
                   'description', 'working_hours', 'email', 'type']
 
     def update(self, instance, validated_data):
-        # instance IS the Profile, so access user directly
         user_data = validated_data.pop('user', {})
         if user_data:
             instance.user.email = user_data.get('email', instance.user.email)
@@ -323,29 +324,67 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             status='in_progress',
         )
     
-
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
-        fields = ['id', 'order', 'business_user', 'rating', 'comment', 'created_at']    
+        fields = ['id', 'business_user', 'reviewer', 'rating', 'description','created_at', 'updated_at']    
 
 
 class ReviewCreateSerializer(serializers.ModelSerializer):
+    reviewer = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = Review
-        fields = ['id', 'order', 'business_user', 'rating', 'comment', 'created_at']
-        read_only_fields = ['id', 'business_user', 'created_at']
+        fields = ['id', 'business_user', 'reviewer', 'rating', 'description','created_at', 'updated_at']
 
-    def create(self, validated_data):
-        order = validated_data['order']
+    def validate_business_user(self, business_user):
         reviewer = self.context['request'].user.profile
 
-        if order.customer_user != reviewer:
-            raise serializers.ValidationError("You can only review orders you have made.")
+        has_ordered = Order.objects.filter(
+            customer_user=reviewer,
+            business_user=business_user
+        ).exists()
 
+        if not has_ordered:
+            raise serializers.ValidationError(
+                "You can only review businesses you have ordered from."
+            )
+
+        if Review.objects.filter(
+            reviewer=reviewer,
+            business_user=business_user
+        ).exists():
+            raise PermissionDenied(
+                "You have already reviewed this business."
+            )
+
+        return business_user
+
+    def create(self, validated_data):
         return Review.objects.create(
-            order=order,
-            business_user=order.business_user,
-            rating=validated_data['rating'],
-            comment=validated_data['comment']
+            reviewer=self.context['request'].user.profile,
+            **validated_data
         )
+    
+
+class ReviewUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Review
+        fields = ['rating', 'description']
+
+    def validate(self, attrs):
+        allowed_fields = {'rating', 'description'}
+
+        received_fields = set(self.initial_data.keys())
+        unknown_fields = received_fields - allowed_fields
+
+        if unknown_fields:
+            raise serializers.ValidationError(
+                {
+                    field: "This field is not allowed."
+                    for field in unknown_fields
+                }
+            )
+
+        return attrs

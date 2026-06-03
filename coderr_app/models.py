@@ -89,13 +89,12 @@ class Order(models.Model):
 
 
 class Review(models.Model):
-    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='review')
     business_user = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
         related_name='received_reviews'
     )
-    reviewer_user = models.ForeignKey(
+    reviewer = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
         related_name='reviews'
@@ -104,6 +103,14 @@ class Review(models.Model):
     rating = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['reviewer', 'business_user'],
+                name='unique_review_per_business'
+            )
+        ]
 
     def __str__(self):
         return f"Review for {self.order.offer.title} by {self.order.customer_user.user.username}"

@@ -1,14 +1,16 @@
 from rest_framework import permissions, viewsets
 from .serializers import ProfileDetailSerializer, ProfileUpdateSerializer, ProfileListSerializerBusiness, ProfileListSerializerCustomer,\
-    OfferSerializer, OfferDetailSerializer, OfferCreateSerializer, OfferByIdSerializer, OrderSerializer, OrderCreateSerializer
-from coderr_app.models import CoderrProfile, Offer, OfferDetail, Order
+    OfferSerializer, OfferDetailSerializer, OfferCreateSerializer, OfferByIdSerializer, OrderSerializer, OrderCreateSerializer, \
+    ReviewSerializer, ReviewCreateSerializer, ReviewUpdateSerializer
+from coderr_app.models import CoderrProfile, Offer, OfferDetail, Order, Review
 from auth_app.models import Profile
 from rest_framework import generics, permissions
 from rest_framework.exceptions import NotFound
-from coderr_app.permissions import IsOwnerOrReadOnly, IsBusinessOwner, IsCustomer, IsStaffUser
+from coderr_app.permissions import IsOwnerOrReadOnly, IsBusinessOwner, IsCustomer, IsStaffUser, IsReviewOwner
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
+from django.db import models
 
 class ProfileDetailView(generics.RetrieveUpdateAPIView):
     """Get or patch a single profile by pk."""
@@ -183,3 +185,59 @@ class CompletedOrderCountView(generics.RetrieveAPIView):
         except Order.DoesNotExist:
             order_count = 0
         return Response({'order_count': order_count})
+    
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing reviews."""
+    queryset = Review.objects.all()
+    pagination_class = None
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ReviewCreateSerializer
+
+        if self.action in ['update', 'partial_update']:
+            return ReviewUpdateSerializer
+
+        return ReviewSerializer
+    
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [permissions.IsAuthenticated(), IsCustomer()]
+        if self.action == 'retrieve' or self.action == 'list':
+            return [permissions.IsAuthenticated()]
+
+        if self.action in ['partial_update', 'update', 'destroy']:
+            return [
+                permissions.IsAuthenticated(),
+                IsReviewOwner()
+            ]
+
+        return [permissions.AllowAny()]
+    
+    def partial_update(self, request, *args, **kwargs):
+        response = super().partial_update(request, *args, **kwargs)
+
+        instance = self.get_object()
+        response.data = ReviewSerializer(instance).data
+
+        return response
+    
+
+
+class BaseInfoView(generics.RetrieveAPIView):
+    """Get basic info about the API, such as total counts of profiles, offers, orders, and reviews."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        business_profile_count = Profile.objects.filter(type='business').count()
+        offer_count = Offer.objects.count()
+        review_count = Review.objects.count()
+        average_rating = Review.objects.aggregate(average_rating=models.Avg('rating'))['average_rating'] or 0
+
+        return Response({
+            'review_count': review_count,
+            'average_rating': average_rating,
+            'business_profile_count': business_profile_count,
+            'offer_count': offer_count,
+        })
