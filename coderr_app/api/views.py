@@ -74,7 +74,7 @@ class BusinessProfileListView(generics.ListAPIView):
     serializer_class = ProfileListSerializerBusiness
     permission_classes = [permissions.IsAuthenticated]
     queryset = Profile.objects.filter(type="business")
-
+    pagination_class = None
 
 class CustomerProfileListView(generics.ListAPIView):
     """List all profiles with type 'customer'."""
@@ -82,6 +82,7 @@ class CustomerProfileListView(generics.ListAPIView):
     serializer_class = ProfileListSerializerCustomer
     permission_classes = [permissions.IsAuthenticated]
     queryset = Profile.objects.filter(type="customer")
+    pagination_class = None
 
 
 class LargeResultsPagination(PageNumberPagination):
