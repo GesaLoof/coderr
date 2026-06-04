@@ -27,6 +27,7 @@ from coderr_app.permissions import (
 )
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import ValidationError
 from django.db.models import Q
 from django.db import models
 
@@ -120,15 +121,55 @@ class OfferViewSet(viewsets.ModelViewSet):
         serializer.save(profile=self.request.user.profile)
 
     def get_queryset(self):
-        queryset = Offer.objects.all()
+        # reject unknown query parameters
+        allowed_params = {"page", "page_size", "creator_id", "min_price", "max_delivery_time", "ordering", "search", "offer_type"}
+        unknown = set(self.request.query_params) - allowed_params
+        if unknown:
+            raise ValidationError(f"Unknown parameters: {', '.join(unknown)}.")
 
-        offer_type = self.request.query_params.get("offer_type")
+        errors = {}
+
         creator_id = self.request.query_params.get("creator_id")
         min_price = self.request.query_params.get("min_price")
         max_delivery_time = self.request.query_params.get("max_delivery_time")
         ordering = self.request.query_params.get("ordering")
-        search = self.request.query_params.get("search")  # in title or description
+        search = self.request.query_params.get("search")
+        page_size = self.request.query_params.get("page_size")
+        offer_type = self.request.query_params.get("offer_type")
 
+        if creator_id:
+            try:
+                creator_id = int(creator_id)
+            except ValueError:
+                errors["creator_id"] = "Must be an integer."
+
+        if min_price:
+            try:
+                min_price = float(min_price)
+            except ValueError:
+                errors["min_price"] = "Must be a float."
+
+        if max_delivery_time:
+            try:
+                max_delivery_time = int(max_delivery_time)
+            except ValueError:
+                errors["max_delivery_time"] = "Must be an integer."
+
+        if page_size:
+            try:
+                page_size = int(page_size)
+            except ValueError:
+                errors["page_size"] = "Must be an integer."
+
+        #actually filter and order the queryset
+        allowed_ordering = ["min_price", "-min_price", "updated_at", "-updated_at"]
+        if ordering and ordering not in allowed_ordering:
+            errors["ordering"] = f"Must be one of: {', '.join(allowed_ordering)}."
+
+        if errors:
+            raise ValidationError(errors)
+
+        queryset = Offer.objects.all()
         if offer_type:
             queryset = queryset.filter(details__offer_type=offer_type)
         if creator_id:
@@ -136,21 +177,19 @@ class OfferViewSet(viewsets.ModelViewSet):
         if min_price:
             queryset = queryset.filter(details__price__gte=min_price)
         if max_delivery_time:
-            queryset = queryset.filter(
-                details__delivery_time_in_days__lte=max_delivery_time
-            )
+            queryset = queryset.filter(details__delivery_time_in_days__lte=max_delivery_time)
         if search:
             queryset = queryset.filter(
                 Q(title__icontains=search) | Q(description__icontains=search)
             )
-        allowed_ordering = ["min_price", "-min_price", "updated_at", "-updated_at"]
+
         if ordering in allowed_ordering:
-            if ordering == "min_price":
-                queryset = queryset.order_by("details__price")
-            elif ordering == "-min_price":
-                queryset = queryset.order_by("-details__price")
+            if ordering in ["min_price", "-min_price"]:
+                direction = "" if ordering == "min_price" else "-"
+                queryset = queryset.order_by(f"{direction}details__price")
             else:
                 queryset = queryset.order_by(ordering)
+
         return queryset.distinct()
 
 
