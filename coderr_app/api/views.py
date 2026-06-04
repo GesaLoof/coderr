@@ -104,6 +104,8 @@ class OfferViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated(), IsBusinessOwner()]
         if self.request.method == "PATCH" or self.request.method == "DELETE":
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
+        if self.action == "retrieve":
+            return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 
     def get_serializer_class(self):
