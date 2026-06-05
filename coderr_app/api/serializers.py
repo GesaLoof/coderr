@@ -34,6 +34,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     tel = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     working_hours = serializers.SerializerMethodField()
+    uploaded_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
