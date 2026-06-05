@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from coderr_app.models import CoderrProfile, Offer, OfferDetail, Order, Review
 from auth_app.models import Profile
-from rest_framework.exceptions import PermissionDenied
 
 
 class CoderrProfileSerializer(serializers.ModelSerializer):
@@ -449,7 +448,7 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         if Review.objects.filter(
             reviewer=reviewer, business_user=business_user
         ).exists():
-            raise PermissionDenied("You have already reviewed this business.")
+            raise serializers.ValidationError("You have already reviewed this business.")
 
         return business_user
 
