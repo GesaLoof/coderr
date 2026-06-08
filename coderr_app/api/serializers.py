@@ -33,7 +33,6 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     tel = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     working_hours = serializers.SerializerMethodField()
-    uploaded_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
@@ -80,8 +79,6 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     def get_working_hours(self, obj):
         return self._get_coderr_field(obj, "working_hours")
 
-    def get_uploaded_at(self, obj):
-        return self._get_coderr_field(obj, "uploaded_at", default=None)
 
 
 class ProfileListSerializerBusiness(ProfileDetailSerializer):
@@ -105,6 +102,8 @@ class ProfileListSerializerBusiness(ProfileDetailSerializer):
 class ProfileListSerializerCustomer(ProfileDetailSerializer):
     """Serializer for listing customer profiles — excludes email and created_at."""
 
+    uploaded_at = serializers.SerializerMethodField()
+
     class Meta(ProfileDetailSerializer.Meta):
         fields = [
             "user",
@@ -115,6 +114,9 @@ class ProfileListSerializerCustomer(ProfileDetailSerializer):
             "uploaded_at",
             "type",
         ]
+
+    def get_uploaded_at(self, obj):
+        return self._get_coderr_field(obj, "uploaded_at", default=None)
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
