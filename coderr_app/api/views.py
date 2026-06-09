@@ -136,6 +136,8 @@ class OfferViewSet(viewsets.ModelViewSet):
         (details__offer_type, details__price etc.) can produce duplicate Offer rows
         when multiple OfferDetail rows match the filter.
         """
+
+        #make sure only allowed query parameters are accepted, to prevent silent failures from typos and to make it clear which filters are supported
         allowed_params = {"page", "page_size", "creator_id", "min_price", "max_delivery_time", "ordering", "search", "offer_type"}
         unknown = set(self.request.query_params) - allowed_params
         if unknown:
@@ -151,6 +153,7 @@ class OfferViewSet(viewsets.ModelViewSet):
         page_size = self.request.query_params.get("page_size")
         offer_type = self.request.query_params.get("offer_type")
 
+        #type-chekc input parameters and collect errors instead of failing on the first one, to provide better feedback to API clients
         if creator_id:
             try:
                 creator_id = int(creator_id)
