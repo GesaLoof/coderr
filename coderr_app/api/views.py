@@ -123,7 +123,19 @@ class OfferViewSet(viewsets.ModelViewSet):
         serializer.save(profile=self.request.user.profile)
 
     def get_queryset(self):
-        # reject unknown query parameters
+        """        
+        Manual filtering is used here instead of DRF's built-in filter backends
+        because:
+        1. creator_id, min_price and max_delivery_time all filter across related
+           models (profile__id, details__price, details__delivery_time_in_days)
+        2. The ordering alias 'min_price' maps to 'details__price' which requires
+           custom mapping logic
+        A custom FilterSet with django-filter would handle this but would be
+        roughly the same amount of code in a less easily readable fashion.
+        .distinct() is required at the end because filtering across related models
+        (details__offer_type, details__price etc.) can produce duplicate Offer rows
+        when multiple OfferDetail rows match the filter.
+        """
         allowed_params = {"page", "page_size", "creator_id", "min_price", "max_delivery_time", "ordering", "search", "offer_type"}
         unknown = set(self.request.query_params) - allowed_params
         if unknown:
@@ -196,7 +208,11 @@ class OfferViewSet(viewsets.ModelViewSet):
 
 
 class OfferDetailView(generics.RetrieveAPIView):
-    """Get a single offer detail by pk."""
+    """Separate view for retrieving a single OfferDetail by pk (different url).
+    This is kept separate from OfferViewSet intentionally. OfferViewSet
+    operates on Offer objects while this view operates on OfferDetail objects.
+    Combining them would require complex queryset and serializer switching logic
+    for what is essentially a completely different model and endpoint."""
 
     queryset = OfferDetail.objects.all()
     serializer_class = OfferDetailSerializer
