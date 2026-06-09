@@ -80,7 +80,6 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         return self._get_coderr_field(obj, "working_hours")
 
 
-
 class ProfileListSerializerBusiness(ProfileDetailSerializer):
     """Serializer for listing business profiles — excludes email and created_at."""
 
@@ -181,6 +180,14 @@ class OfferDetailSerializer(serializers.ModelSerializer):
             "features",
             "offer_type",
         ]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        if "offer_type" not in attrs:
+            raise serializers.ValidationError(
+                {"offer_type": ["offer_type is required."]}
+            )
+        return attrs
 
 
 class StrictModelSerializer(serializers.ModelSerializer):
