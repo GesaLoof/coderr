@@ -219,6 +219,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         if self.request.method == "POST":
             return [permissions.IsAuthenticated(), IsCustomer()]
         if self.request.method == "PATCH":
+            try:
+                obj = Order.objects.get(pk=self.kwargs["pk"])
+            except Order.DoesNotExist:
+                raise NotFound("No profile matches the given query.")
             return [permissions.IsAuthenticated(), IsBusinessOwner()]
         if self.request.method == "DELETE":
             return [IsStaffUser()]
