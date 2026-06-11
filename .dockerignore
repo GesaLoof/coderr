@@ -1,0 +1,37 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Environment variables (keep secrets out of the image)
+.env
+*.env
+
+# Database files
+*.sqlite3
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker itself
+Dockerfile
+.dockerignore
+
+# Tests and docs (optional, keeps image smaller)
+tests/
+docs/
