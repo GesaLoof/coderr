@@ -148,3 +148,12 @@ REST_FRAMEWORK = {
     }
 }
 
+CORS_ALLOWED_ORIGINS = [
+    "http://gesaloof.com",
+    "http://www.gesaloof.com",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://gesaloof.com",
+    "http://www.gesaloof.com",
+]
