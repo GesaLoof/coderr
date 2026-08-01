@@ -352,12 +352,8 @@ class BaseInfoView(generics.RetrieveAPIView):
         business_profile_count = Profile.objects.filter(type="business").count()
         offer_count = Offer.objects.count()
         review_count = Review.objects.count()
-        average_rating = (
-            Review.objects.aggregate(average_rating=models.Avg("rating"))[
-                "average_rating"
-            ]
-            or 0
-        )
+        average_rating = Review.objects.aggregate(average_rating=models.Avg("rating"))["average_rating"]
+        average_rating = round(average_rating, 1) if average_rating is not None else None
 
         return Response(
             {
