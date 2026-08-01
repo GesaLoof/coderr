@@ -23,16 +23,14 @@ from coderr_app.models import CoderrProfile, Offer, OfferDetail, Order, Review
 DEMO_PASSWORD = "demo1234"
 
 BUSINESSES = [
-    {
-        "username": "gesa_loof",
-        "first_name": "Gesa",
-        "last_name": "Loof",
+    {   "username": "dev_anna",
+        "first_name": "Anna",
+        "last_name": "Müller",
         "location": "Berlin, Germany",
         "description": (
-            "Molecular biologist turned software engineer. I worked in academic software "
-            "engineering focused on biomedical imaging, and I'm now expanding into backend "
-            "development and production deployment. Python, Django, PyTorch, Docker."
-        ),
+            "Full stack developer with a background in biology and data science. "
+            "Specializing in Python, Django, REST APIs, and Docker deployments."
+		 ),
         "offers": [
             {
                 "title": "Custom Django Backend Development",
@@ -95,8 +93,6 @@ class Command(BaseCommand):
 
         if options["flush"]:
             demo_profiles = Profile.objects.filter(user__username__in=all_usernames)
-            # Delete in dependency order: Order.offer_detail is PROTECTed, so
-            # orders must go before offer details/offers.
             Review.objects.filter(business_user__in=demo_profiles).delete()
             Review.objects.filter(reviewer__in=demo_profiles).delete()
             Order.objects.filter(customer_user__in=demo_profiles).delete()
@@ -141,7 +137,6 @@ class Command(BaseCommand):
                         all_offer_details.append((detail, profile))
                     self.stdout.write(f"  Created offer: {offer.title} ({len(offer_data['tiers'])} tiers)")
 
-            # A handful of orders, spread across customers and businesses
             statuses = ["completed", "completed", "in_progress", "completed", "cancelled"]
             sample_orders = random.sample(all_offer_details, k=min(6, len(all_offer_details)))
             created_orders = []
@@ -162,8 +157,6 @@ class Command(BaseCommand):
                 )
                 created_orders.append(order)
             self.stdout.write(f"  Created {len(created_orders)} orders")
-
-            # Reviews: one per (reviewer, business) pair among completed orders
             seen_pairs = set()
             review_count = 0
             for order in created_orders:
