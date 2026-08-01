@@ -50,9 +50,9 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
         return ProfileDetailSerializer
 
     def get_object(self):
-        """Fetch Profile by pk or raise 404."""
+        """Fetch Profile by user pk or raise 404."""
         try:
-            obj = Profile.objects.get(pk=self.kwargs["pk"])
+            obj = Profile.objects.get(user__id=self.kwargs["pk"])
         except Profile.DoesNotExist:
             raise NotFound("No profile matches the given query.")
         self.check_object_permissions(self.request, obj)
