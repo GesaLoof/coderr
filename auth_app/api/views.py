@@ -5,12 +5,14 @@ from .serializers import UserSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
+from auth_app.throttles import LoginRateThrottle, RegisterRateThrottle
 
 
 class RegisterView(APIView):
     """Register a new user and return an auth token."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [RegisterRateThrottle]
 
     def post(self, request):
         """Handle POST to create a new user and return token data."""
@@ -34,6 +36,7 @@ class CustomLoginView(ObtainAuthToken):
     """Authenticate user and return token with profile fields."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [LoginRateThrottle]
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
