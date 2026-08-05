@@ -83,13 +83,6 @@ docker compose exec web python manage.py seed_demo_data
 - Full-text search and filtering on offers (by type, price range, delivery time)
 - Profile management with avatar upload, location, phone, bio, and working hours
 
-## Tech Stack
-
-- Django 5.2
-- Django REST Framework 3.17
-- Token-based authentication
-- SQLite3 (development) — PostgreSQL recommended for production
-
 ## Data Models
 
 | Model | Description |
