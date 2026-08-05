@@ -1,24 +1,73 @@
 # Coderr
 
-A freelance services marketplace connecting businesses offering services with customers who need them. Built with Django and Django REST Framework.
+A freelance services marketplace connecting businesses offering services with customers who need them. Built with Django and Django REST Framework. The project is hosted and live under www.gesaloof.com.
 
-## Setup
+## Installation
 
+
+### Local Development
+
+**1. Clone the repository**
 ```bash
-# Create and activate a virtual environment
-python -m venv venv && source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment
-cp .env.example .env
-# Set SECRET_KEY and DEBUG in .env
-
-# Run migrations and start the server
-python manage.py migrate
-python manage.py runserver
+git clone https://github.com/GesaLoof/coderr
+cd coderr
 ```
+
+**2. Create a `.env` file** in the project root (see `.env.example` for reference):
+
+**3. Build and start the containers**
+```bash
+docker compose up --build
+```
+
+This will automatically:
+- Start the PostgreSQL database
+- Run migrations
+- Create a superuser
+- Start the development server at `http://localhost:8000`
+
+**4. Seed demo data (optional)**
+```bash
+docker compose exec web python manage.py seed_demo_data
+```
+
+---
+
+### Production Deployment
+
+**1. Clone the repository on your server**
+```bash
+git clone https://github.com/GesaLoof/coderr
+cd coderr
+```
+
+**2. Create a `.env` file** with production values:
+
+**3. Set up SSL with Let's Encrypt**
+```bash
+sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
+```
+
+**4. Build and start the containers**
+```bash
+docker compose up --build -d
+```
+
+**5. Seed demo data (optional)**
+```bash
+docker compose exec web python manage.py seed_demo_data
+```
+
+---
+
+## Tech Stack
+
+- **Django** — REST API and business logic
+- **Django REST Framework** — API endpoints and token authentication
+- **PostgreSQL** — production database
+- **Gunicorn** — production WSGI server
+- **Nginx** — reverse proxy and static file serving
+- **Docker** — containerization and deployment
 
 ## Roles
 
